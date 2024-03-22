@@ -1,0 +1,29 @@
+#!/bin/bash
+# prepublish
+# Tidy up and run checks before publishing
+set -euo pipefail  # Fail on any error
+export Gre='\e[1;32m' Red='\e[1;31m' Rst='\e[0m'
+Prg=`head -1 go.mod | awk -F'/' '{print $NF}' | awk '{print $NF}'`
+case "$OSTYPE" in
+    "linux-gnu"* ) printf "==> OS = Linux\n" ;;
+    "darwin"* )    printf "==> OS = macOS\n" ;;
+    "msys"* )      printf "==> OS = Windows with GitBASH\n" ;;
+    * )            printf "==> OS = \"$OSTYPE\", unknown! (Options are Linux, macOS, or GitBASH on Windows)\n" && exit 1 ;;
+esac
+
+printf "==> See publishing => https://go.dev/doc/modules/publishing (Not running list cmd to make mod fully available.)\n"
+printf "==> And versioning => https://go.dev/doc/modules/version-numbers\n"
+
+go mod tidy
+go fmt
+go test ./...
+staticcheck ./...
+
+printf "\n==> grep replace go.mod:\n$Red$(grep replace go.mod)$Rst"
+printf "\n==> Last 5 tag versions:\n"
+git tag | sort -V | tail -5
+CurrentTag=`git tag | sort -V | tail -1`
+printf "\n==> To publish, do below one-liner, advancing Tag version:\n\n"
+printf "  Tag=$CurrentTag && git add . && git commit -m \"x updates\" && git tag \$Tag && git push origin \$Tag && git push\n\n"
+
+exit 0
